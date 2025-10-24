@@ -1,34 +1,33 @@
 package com.taller;
 
 import java.sql.Connection;
-
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
-
 import com.taller.modelo.ConexionDatabase;
-import com.taller.vista.MenuPrincipalFrame;
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 
-public class Main {
+public class Main extends Application {
+
+    @Override
+    public void start(Stage stage) throws Exception {
+        // Cargar la vista FXML
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/Views/MenuVista.fxml"));
+        Scene scene = new Scene(fxmlLoader.load());
+
+        // Configurar la ventana
+        stage.setTitle("Menú Principal");
+        stage.setScene(scene);
+        stage.setResizable(false);
+        stage.show();
+    }
+
     public static void main(String[] args) {
-                Connection conexion = null;
+        System.out.println("Intentando conectar...");
+        Connection conexion = ConexionDatabase.getConnection();
 
-        try {
-            conexion = ConexionDatabase.getConnection();
-            if (conexion != null) {
-                System.out.println(" Conexión exitosa a la base de datos.");
-            } else {
-                JOptionPane.showMessageDialog(null, " No se pudo establecer conexión con la base de datos.");
-                return;
-            }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Error al conectar con la base de datos: " + e.getMessage());
-            e.printStackTrace();
-            return;
-        } 
-
-        // Abre el menú principal
-        SwingUtilities.invokeLater(() -> {
-            new MenuPrincipalFrame().setVisible(true);
-        });
+        System.out.println("Inicio aplicación JavaFX...");
+        launch(args);
     }
 }
+

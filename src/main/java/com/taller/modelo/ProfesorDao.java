@@ -6,100 +6,68 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 
 public class ProfesorDao {
-        private PreparedStatement preparedStatement;
+    private PreparedStatement preparedStatement;
     private ResultSet resultSet;
 
+    // === INSERTAR USANDO PROCEDIMIENTO ===
     public boolean insertarProfesor(Profesor profesor) {
-        // Lógica para insertar un profesor en la base de datos
         boolean exito = false;
-        String sql = "INSERT INTO profesor (nombre, materia, correo_electronico) VALUES (?, ?, ?)";
+        String sql = "{CALL insertarProfesor(?, ?, ?)}";
         try {
             Connection conn = ConexionDatabase.getInstance().getConnection();
             preparedStatement = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
             preparedStatement.setString(1, profesor.getNombre());
             preparedStatement.setString(2, profesor.getMateria());
             preparedStatement.setString(3, profesor.getCorreoElectronico());
-            int res = preparedStatement.executeUpdate();
-            if (res > 0) {
-                try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        profesor.setId(generatedKeys.getInt(1));
-                    }
-                }
-                exito = true;
-            }
+            preparedStatement.execute();
+            exito = true;
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Error al insertar profesor: " + e.getMessage());
         }
         return exito;
     }
 
+    // === MOSTRAR TODOS LOS PROFESORES ===
     public ArrayList<Profesor> obtenerTodosLosProfesores(String filter, ArrayList<String> data) {
         ArrayList<Profesor> profesores = new ArrayList<>();
-        Profesor profesor;
-        Connection connect = null;
-        try {
-            connect = ConexionDatabase.getInstance().getConnection();
-            if (connect != null) {
-                String sql = " ";
-                switch (filter) {
-                    case "nombre":
-                        sql = "SELECT * FROM profesor WHERE nombre REGEXP ?";
-                        preparedStatement = connect.prepareStatement(sql);
-                        preparedStatement.setString(1, data.get(0));
-                        break;
-                    case "materia":
-                        sql = "SELECT * FROM profesor WHERE materia REGEXP ?";
-                        preparedStatement = connect.prepareStatement(sql);
-                        preparedStatement.setString(1, data.get(0));
-                        break;
-                    default:
-                        sql = "SELECT * FROM profesor where 1";
-                        preparedStatement = connect.prepareStatement(sql);
-                        break;
-                }
-                resultSet = preparedStatement.executeQuery();
-                while (resultSet.next()) {
-                    profesor = new Profesor(
-                            resultSet.getInt("id_profesor"),
-                            resultSet.getString("nombre"),
-                            resultSet.getString("materia"),
-                            resultSet.getString("correo_electronico")
-                    );
-                    profesores.add(profesor);
-                }
-            } else {
-                System.out.println("No se pudo establecer la conexión a la base de datos.");
-            }
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        } finally {
-            try {
-                ConexionDatabase.getInstance().close();
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
-            }
-        }
-        return profesores;
-    }
-    public boolean actualizarProfesor(Profesor profesor) {
-        boolean state = false;
-        String sql = "UPDATE profesor SET nombre = ?, materia = ?, correo_electronico = ? WHERE id_profesor = ?";
         try {
             Connection conn = ConexionDatabase.getInstance().getConnection();
-            if (conn != null) {
+            String sql = "{CALL mostrarProfesores()}";
+            preparedStatement = conn.prepareStatement(sql);
+            
+            resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Profesor profesor = new Profesor(0, "", "", "");
+                profesor.setId(resultSet.getInt("id_profesor"));
+                profesor.setNombre(resultSet.getString("nombre"));
+                profesor.setMateria(resultSet.getString("materia"));
+                profesor.setCorreoElectronico(resultSet.getString("correo_electronico"));
+                profesores.add(profesor);
+            }
+        } catch (Exception e) {
+            System.out.println("Error al obtener profesores: " + e.getMessage());
+        } 
+           return profesores;
+
+    }
+
+    // === ACTUALIZAR USANDO PROCEDIMIENTO ===
+    public boolean actualizarProfesor(Profesor profesor) {
+        boolean state = false;
+        String sql = " {CALL actualizarProfesor(?, ?, ?, ?)}";
+        try {
+            Connection conn = ConexionDatabase.getInstance().getConnection();
                 preparedStatement = conn.prepareStatement(sql);
                 preparedStatement.setString(1, profesor.getNombre());
                 preparedStatement.setString(2, profesor.getMateria());
                 preparedStatement.setString(3, profesor.getCorreoElectronico());
                 preparedStatement.setInt(4, profesor.getId());
+
                 int res = preparedStatement.executeUpdate();
-                if (res > 0) {
-                    state = true;
-                }
-            }
+                    state = res > 0;
+                   
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Error al actualizar profesor: " + e.getMessage());
         } finally {
             try {
                 ConexionDatabase.getInstance().close();
@@ -109,21 +77,20 @@ public class ProfesorDao {
         }
         return state;
     }
-    public boolean eliminarProfesor(int id) {
+
+    // === ELIMINAR USANDO PROCEDIMIENTO ===
+    public boolean eliminarProfesor(int id_profesor) {
         boolean state = false;
-        String sql = "DELETE FROM profesor WHERE id_profesor = ?";
+        String sql = "{CALL eliminarProfesor(?)}";
         try {
             Connection conn = ConexionDatabase.getInstance().getConnection();
-            if (conn != null) {
                 preparedStatement = conn.prepareStatement(sql);
-                preparedStatement.setInt(1, id);
+                preparedStatement.setInt(1, id_profesor);
                 int res = preparedStatement.executeUpdate();
-                if (res > 0) {
-                    state = true;
-                }
-            }
+                state = res > 0;
+            
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Error al eliminar profesor: " + e.getMessage());
         } finally {
             try {
                 ConexionDatabase.getInstance().close();
